@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">PopularMovies</string>
+    <string name="most_popular">Most popular</string>
+    <string name="highest_rated">Highest Rated</string>
+    <string name="error_message">Error loading data</string>
+    <string name="detail_error_message">Data error</string>
+    <string name="poster">poster</string>
+    <string name="error_internet_message">No internet connection</string>
+</resources>
