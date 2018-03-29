@@ -1,21 +1,40 @@
 package com.example.juraj.popularmovies;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.juraj.popularmovies.data.MoviesContract;
 import com.example.juraj.popularmovies.model.Movie;
+import com.example.juraj.popularmovies.model.MovieReview;
+import com.example.juraj.popularmovies.model.MovieVideo;
+import com.example.juraj.popularmovies.util.JsonUtil;
+import com.example.juraj.popularmovies.util.NetworkUtil;
 import com.squareup.picasso.Picasso;
 
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 import static android.content.ContentValues.TAG;
+import static com.example.juraj.popularmovies.data.MoviesDbHelper.LOG_TAG;
 
 /**
  * Created by juraj on 2/23/18.
@@ -40,25 +59,69 @@ public class DetailActivity extends Activity {
     private static final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/";
     private static final String IMAGE_SIZE = "w185/";
 
-    private Context context;
+    private ListView mReviewListView;
+    private ListView mVideoListView;
+    private TextView mErrorMessageDisplay;
+
+    private ImageButton mButton;
+    private ContentResolver mContentResolver;
+
+    Context context = DetailActivity.this;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
-        this.context = context;
+        mReviewListView = (ListView) findViewById(R.id.movie_review_list);
 
-        Intent intent = this.getIntent();
+        mVideoListView = (ListView) findViewById(R.id.movie_video_list);
+
+        mErrorMessageDisplay = (TextView) findViewById(R.id.error_message);
+
+        final Intent intent = this.getIntent();
 
         int position = intent.getIntExtra(EXTRA_POSITION, 0);
-        int movieId = intent.getIntExtra(EXTRA_MOVIE_ID, 0);
-        String movieTitle = intent.getStringExtra(EXTRA_TITLE);
-        String releaseDate = intent.getStringExtra(EXTRA_RELEASE_DATE);
-        String posterPath = intent.getStringExtra(EXTRA_POSTER_PATH);
-        Double voteAverage = intent.getDoubleExtra(EXTRA_VOTE_AVERAGE,0);
-        String movieOverview = intent.getStringExtra(EXTRA_MOVIE_OVERVIEW);
+        final int movieId = intent.getIntExtra(EXTRA_MOVIE_ID, 0);
 
-        String fullPosterPath = BASE_IMAGE_URL + IMAGE_SIZE + posterPath;
+        final String movieIdString = String.valueOf(movieId);
+
+        final String movieTitle = intent.getStringExtra(EXTRA_TITLE);
+        final String releaseDate = intent.getStringExtra(EXTRA_RELEASE_DATE);
+        final String posterPath = intent.getStringExtra(EXTRA_POSTER_PATH);
+        final Double voteAverage = intent.getDoubleExtra(EXTRA_VOTE_AVERAGE, 0);
+
+        final String voteAverageString = String.valueOf(voteAverage);
+        final String movieOverview = intent.getStringExtra(EXTRA_MOVIE_OVERVIEW);
+
+        final String fullPosterPath = BASE_IMAGE_URL + IMAGE_SIZE + posterPath;
+
+//        String movieReviewsUrl = MOVIE_BASE_URL + movieId + REVIEW_API_DELIMITER + API_KEY;
+//
+//        String movieVideosUrl = MOVIE_BASE_URL + movieId + VIDEO_API_DELIMITER + API_KEY;
+//
+//        Log.v(TAG, "URLs " + movieReviewsUrl + movieVideosUrl);
+
+        mContentResolver = DetailActivity.this.getContentResolver();
+
+        mButton = (ImageButton) findViewById(R.id.favorite);
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ContentValues values = new ContentValues();
+                values.put(MoviesContract.MovieEntry.COLUMN_MOVIE_ID, movieIdString);
+                values.put(MoviesContract.MovieEntry.COLUMN_TITLE, movieTitle);
+                values.put(MoviesContract.MovieEntry.COLUMN_RELEASE_DATE, releaseDate);
+                values.put(MoviesContract.MovieEntry.COLUMN_POSTER_PATH, posterPath);
+                values.put(MoviesContract.MovieEntry.COLUMN_VOTE_AVERAGE, voteAverageString);
+                values.put(MoviesContract.MovieEntry.COLUMN_OVERVIEW, movieOverview);
+
+                Uri returned = mContentResolver.insert(MoviesContract.MovieEntry.CONTENT_URI, values);
+                Log.d(LOG_TAG, "record id returned is " + returned.toString());
+                Toast.makeText(context, "Marked as favorite!",
+                        Toast.LENGTH_SHORT).show();
+                mButton.setEnabled(false);
+            }
+        });
 
         ImageView imageView = findViewById(R.id.image_detail);
 
@@ -94,7 +157,172 @@ public class DetailActivity extends Activity {
 
         movieOverView.setText(movieOverview);
 
+        new FetchReviewsTask().execute(movieIdString);
+
+        new FetchVideosTask().execute(movieIdString);
+
     }
+
+
+    public class FetchReviewsTask extends AsyncTask<String, Void, ArrayList<MovieReview>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected ArrayList<MovieReview> doInBackground(String... params) {
+
+            if (params.length == 0) {
+                return null;
+            }
+
+            String reviewQuery = String.valueOf(params[0]);
+            URL ReviewRequestUrl = NetworkUtil.buildReviewUrl(reviewQuery);
+
+            try {
+                String jsonReviewResponse = NetworkUtil
+                        .getResponseFromHttpUrl(ReviewRequestUrl);
+
+                Log.v(TAG, "Review Response " + jsonReviewResponse);
+
+                return
+                        JsonUtil.parseReviewsFromJson(DetailActivity.this, jsonReviewResponse);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final ArrayList<MovieReview> reviewData) {
+
+            if (reviewData != null) {
+
+                Log.v(TAG, " ReviewData " + reviewData);
+
+
+                MovieReviewAdapter mMovieReviewAdapter = new MovieReviewAdapter((Activity) context, reviewData);
+
+                mMovieReviewAdapter.addAll(reviewData);
+
+                ListView listView = findViewById(R.id.movie_review_list);
+                listView.setAdapter(mMovieReviewAdapter);
+
+
+//                mReviewListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//                    public void onItemClick(AdapterView<?> parent, View v,
+//                                            int position, long id) {
+//                        MovieReview data = reviewData.get(position);
+//
+//                        Integer movieId = data.getId();
+//                        String movieTitle = data.getTitle();
+//                        String movieReleaseDate = data.getRelease_date();
+//                        String moviePosterPath = data.getPoster_path();
+//                        Double movieVoteAverage = data.getVote_average();
+//                        String movieOverview = data.getOverview();
+//
+//                        startDetailActivity(position, movieId, movieTitle, movieReleaseDate, moviePosterPath, movieVoteAverage, movieOverview);
+//
+//                    }
+//                });
+            } else {
+                showErrorMessage();
+            }
+
+        }
+    }
+
+
+    public class FetchVideosTask extends AsyncTask<String, Void, ArrayList<MovieVideo>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected ArrayList<MovieVideo> doInBackground(String... params) {
+
+            if (params.length == 0) {
+                return null;
+            }
+
+            String videoQuery = String.valueOf(params[0]);
+            URL MovieRequestUrl = NetworkUtil.buildVideoUrl(videoQuery);
+
+            try {
+                String jsonVideoResponse = NetworkUtil
+                        .getResponseFromHttpUrl(MovieRequestUrl);
+
+                Log.v(TAG, "Review Response " + jsonVideoResponse);
+
+                return
+                        JsonUtil.parseMovieVideosFromJson(DetailActivity.this, jsonVideoResponse);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final ArrayList<MovieVideo> videoData) {
+
+            if (videoData != null) {
+
+                Log.v(TAG, " VideoData " + videoData);
+
+
+                MovieVideoAdapter mMovieVideoAdapter = new MovieVideoAdapter((Activity) context, videoData);
+
+                mMovieVideoAdapter.addAll(videoData);
+
+                ListView listView = findViewById(R.id.movie_video_list);
+                listView.setAdapter(mMovieVideoAdapter);
+
+
+                mVideoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    public void onItemClick(AdapterView<?> parent, View v,
+                                            int position, long id) {
+                        MovieVideo data = videoData.get(position);
+
+                        String key = data.getKey();
+
+                        watchYoutubeVideo(context, key);
+
+                    }
+                });
+            } else {
+                showErrorMessage();
+            }
+
+        }
+    }
+
+
+    public static void watchYoutubeVideo(Context context, String id) {
+        Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + id));
+        Intent webIntent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("http://www.youtube.com/watch?v=" + id));
+        try {
+            context.startActivity(appIntent);
+        } catch (ActivityNotFoundException ex) {
+            context.startActivity(webIntent);
+        }
+    }
+
+
+    private void showErrorMessage() {
+
+        mReviewListView.setVisibility(View.INVISIBLE);
+
+        mErrorMessageDisplay.setVisibility(View.VISIBLE);
+    }
+
+
 
     private void closeOnError () {
         finish();

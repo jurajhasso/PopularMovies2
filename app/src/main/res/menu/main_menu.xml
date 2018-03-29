@@ -5,5 +5,8 @@
         android:title="@string/most_popular" />
     <item android:id="@+id/highest_rated"
         android:title="@string/highest_rated" />
+    <item
+        android:id="@+id/favorites"
+        android:title="@string/favorites" />
 
 </menu>

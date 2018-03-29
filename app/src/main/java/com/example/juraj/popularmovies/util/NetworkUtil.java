@@ -22,11 +22,13 @@ public final class NetworkUtil {
 
     private static final String BASE_URL = "https://api.themoviedb.org/3/";
 
-    private static final String POPULAR_MOVIES_URL = "https://api.themoviedb.org/3/movie/popular";
-
-    private static final String HIGHEST_RATED_URL = "https://api.themoviedb.org/3/movie/top_rated";
-
     private final static String QUERY_DELIMITER = "api_key";
+
+    public static final String MOVIE_BASE_URL = "https://api.themoviedb.org/3/movie/";
+
+    public static final String REVIEW_API_DELIMITER = "reviews";
+
+    public static final String VIDEO_API_DELIMITER = "videos";
 
     public static URL buildUrl(String typeQuery) {
         Uri builtUri = Uri.parse(BASE_URL).buildUpon()
@@ -44,6 +46,45 @@ public final class NetworkUtil {
 
         return url;
     }
+
+    public static URL buildReviewUrl(String reviewQuery) {
+        Uri builtUri = Uri.parse(MOVIE_BASE_URL).buildUpon()
+                .appendEncodedPath(reviewQuery)
+                .appendEncodedPath(REVIEW_API_DELIMITER)
+                .appendQueryParameter(QUERY_DELIMITER, api_key)
+                .build();
+
+        URL url = null;
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        Log.v(TAG, "Built review URI " + url);
+
+        return url;
+    }
+
+    public static URL buildVideoUrl(String videoQuery) {
+        Uri builtUri = Uri.parse(MOVIE_BASE_URL).buildUpon()
+                .appendEncodedPath(videoQuery)
+                .appendEncodedPath(VIDEO_API_DELIMITER)
+                .appendQueryParameter(QUERY_DELIMITER, api_key)
+                .build();
+
+        URL url = null;
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        Log.v(TAG, "Built video URI " + url);
+
+        return url;
+    }
+
+
+
 
     public static String getResponseFromHttpUrl(URL url) throws IOException {
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();

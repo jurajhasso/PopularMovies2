@@ -6,4 +6,9 @@
     <string name="detail_error_message">Data error</string>
     <string name="poster">poster</string>
     <string name="error_internet_message">No internet connection</string>
+    <string name="favorites">Favorites</string>
+    <string name="review_text">Reviews</string>
+    <string name="video_text">Videos</string>
+
+    <string name="content_authority">com.example.juraj.popularmovies</string>
 </resources>

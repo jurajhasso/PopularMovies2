@@ -1,8 +1,11 @@
 package com.example.juraj.popularmovies;
 
 import android.app.Activity;
+import android.app.LoaderManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.Loader;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -17,6 +20,8 @@ import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.juraj.popularmovies.data.MovieListLoader;
+import com.example.juraj.popularmovies.data.MoviesContract;
 import com.example.juraj.popularmovies.model.Movie;
 import com.example.juraj.popularmovies.util.JsonUtil;
 import com.example.juraj.popularmovies.util.NetworkUtil;
@@ -26,7 +31,9 @@ import java.util.ArrayList;
 
 import static android.content.ContentValues.TAG;
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<Movie>> {
+
+    private static final int LOADER_ID = 1;
 
     private TextView mErrorMessageDisplay;
 
@@ -42,9 +49,16 @@ public class MainActivity extends AppCompatActivity  {
 
     Context context = MainActivity.this;
 
+    private ContentResolver mContentResolver;
+
+    private ArrayList<Movie> mMovie;
+
+    public MovieAdapter mMovieAdapter;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         mErrorMessageDisplay = (TextView) findViewById(R.id.error_message);
@@ -55,8 +69,58 @@ public class MainActivity extends AppCompatActivity  {
 
         mGridView = (GridView) findViewById(R.id.gridview);
 
+        mContentResolver = MainActivity.this.getContentResolver();
+
+        getLoaderManager().initLoader(LOADER_ID, null, this);
+
         loadMovieData();
     }
+
+
+    @Override
+    public Loader<ArrayList<Movie>> onCreateLoader(int i, Bundle args) {
+        mContentResolver = context.getContentResolver();
+        return new MovieListLoader(context, MoviesContract.MovieEntry.CONTENT_URI, mContentResolver);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<ArrayList<Movie>> loader, final ArrayList<Movie> movieData) {
+        getLoaderManager().destroyLoader(LOADER_ID);
+        MovieAdapter mMovieAdapter = new MovieAdapter((Activity) context, movieData);
+
+        Log.v(TAG, "MOVIE DATA FROM LOADER" + movieData);
+
+        //  mMovieAdapter.addAll(movieData);
+
+        GridView gridview = findViewById(R.id.gridview);
+        gridview.setAdapter(mMovieAdapter);
+
+        Log.v(TAG, "INSIDE OF ONLOADFINISHED" + movieData);
+
+        gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v,
+                                    int position, long id) {
+                Movie data = movieData.get(position);
+
+                Integer movieId = data.getId();
+                String movieTitle = data.getTitle();
+                String movieReleaseDate = data.getRelease_date();
+                String moviePosterPath = data.getPoster_path();
+                Double movieVoteAverage = data.getVote_average();
+                String movieOverview = data.getOverview();
+
+                startDetailActivity(position, movieId, movieTitle, movieReleaseDate, moviePosterPath, movieVoteAverage, movieOverview);
+
+            }
+        });
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<ArrayList<Movie>> loader) {
+        mMovieAdapter.add(null);
+    }
+
 
     private void loadMovieData() {
 
@@ -213,6 +277,14 @@ public class MainActivity extends AppCompatActivity  {
         }
     }
 
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+
+
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -232,6 +304,9 @@ public class MainActivity extends AppCompatActivity  {
             case R.id.highest_rated:
                 type = "movie/top_rated";
                 loadMovieData();
+                return true;
+            case R.id.favorites:
+                getLoaderManager().initLoader(LOADER_ID, null, this);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
