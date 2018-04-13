@@ -9,6 +9,7 @@ import android.content.Loader;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,6 +34,14 @@ import static android.content.ContentValues.TAG;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<Movie>> {
 
+    private static final String GRID_VIEW_POSITION = "POSITION";
+
+    private static final String INDEX = "index";
+
+    private Parcelable mGridState = null;
+
+    private int mIndex;
+
     private static final int LOADER_ID = 1;
 
     private TextView mErrorMessageDisplay;
@@ -53,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private ArrayList<Movie> mMovie;
 
-    public MovieAdapter mMovieAdapter;
+    private MovieAdapter mMovieAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -73,7 +82,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         getLoaderManager().initLoader(LOADER_ID, null, this);
 
-        loadMovieData();
+        if (savedInstanceState != null) {
+
+            loadMovieData();
+
+        }
+
+
+        // I should create an empty MovieAdapter here, however I am unable to find out how. 
+
+        mMovieAdapter = new MovieAdapter();
+
+
+        if (savedInstanceState != null) {
+            ArrayList<MyItem> items = savedInstanceState.getParcelableArrayList("myAdapter");
+            myAdapter.setItems(items); // Load saved data if any.
+        }
+        gridView.setAdapter(myAdapter);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+
+        super.onSaveInstanceState(savedInstanceState);
+
+        savedInstanceState.putParcelableArrayList("myAdapter", mMovieAdapter.getItems());
+
     }
 
 
@@ -88,14 +122,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         getLoaderManager().destroyLoader(LOADER_ID);
         MovieAdapter mMovieAdapter = new MovieAdapter((Activity) context, movieData);
 
-        Log.v(TAG, "MOVIE DATA FROM LOADER" + movieData);
-
         //  mMovieAdapter.addAll(movieData);
 
         GridView gridview = findViewById(R.id.gridview);
         gridview.setAdapter(mMovieAdapter);
-
-        Log.v(TAG, "INSIDE OF ONLOADFINISHED" + movieData);
 
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v,
@@ -117,7 +147,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     @Override
-    public void onLoaderReset(Loader<ArrayList<Movie>> loader) {
+    public void onLoaderReset(Loader<
+            ArrayList<Movie>> loader) {
         mMovieAdapter.add(null);
     }
 
@@ -251,6 +282,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 mMovieAdapter.addAll(movieData);
 
                 GridView gridview = findViewById(R.id.gridview);
+
                 gridview.setAdapter(mMovieAdapter);
 
                 mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -275,10 +307,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 showErrorMessage();
             }
         }
-    }
-
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
     }
 
 
