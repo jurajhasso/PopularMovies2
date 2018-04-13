@@ -23,14 +23,14 @@ import static android.content.ContentValues.TAG;
  * Created by juraj on 2/23/18.
  */
 
-public abstract class MovieAdapter extends ArrayAdapter<Movie> {
+public class MovieAdapter extends ArrayAdapter<Movie> {
 
     private Context context;
 
     private static final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/";
     private static final String IMAGE_SIZE = "w185/";
 
-    private final ArrayList<Movie> moviesList = null;
+    private static ArrayList<Movie> moviesList = null;
 
 
     public MovieAdapter(Activity context, ArrayList<Movie> moviesList) {
@@ -40,13 +40,21 @@ public abstract class MovieAdapter extends ArrayAdapter<Movie> {
 
     }
 
-    public MovieAdapter() {
-        super();
+    public MovieAdapter(@NonNull Context context, int resource) {
+        super(context, resource);
     }
 
     public ArrayList<Movie> getItems() {
         return moviesList;
     }
+
+    public void setItems(ArrayList<Movie> mMoviesList) {
+        moviesList = new ArrayList<Movie>();
+        moviesList.clear();
+        moviesList.addAll(mMoviesList);
+        notifyDataSetChanged();
+    }
+
 
     @NonNull
     @Override

@@ -82,29 +82,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         getLoaderManager().initLoader(LOADER_ID, null, this);
 
-        if (savedInstanceState != null) {
+        if (savedInstanceState == null) {
 
             loadMovieData();
 
         }
 
-
-        // I should create an empty MovieAdapter here, however I am unable to find out how. 
-
-        mMovieAdapter = new MovieAdapter();
+        mMovieAdapter = new MovieAdapter(context, 0);
 
 
         if (savedInstanceState != null) {
-            ArrayList<MyItem> items = savedInstanceState.getParcelableArrayList("myAdapter");
-            myAdapter.setItems(items); // Load saved data if any.
+
+            ArrayList<Movie> items = savedInstanceState.getParcelableArrayList("myAdapter");
+
+            Log.v("items that returned", "items that returned" + items);
+
+            mMovieAdapter.setItems(items);
         }
-        gridView.setAdapter(myAdapter);
+        mGridView.setAdapter(mMovieAdapter);
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
 
         super.onSaveInstanceState(savedInstanceState);
+
+        Log.v("onsaveitems", "onsaveitems" + mMovieAdapter.getItems());
 
         savedInstanceState.putParcelableArrayList("myAdapter", mMovieAdapter.getItems());
 
