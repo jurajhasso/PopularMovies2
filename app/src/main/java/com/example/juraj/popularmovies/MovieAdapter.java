@@ -44,18 +44,6 @@ public class MovieAdapter extends ArrayAdapter<Movie> {
         super(context, resource);
     }
 
-    public ArrayList<Movie> getItems() {
-        return moviesList;
-    }
-
-    public void setItems(ArrayList<Movie> mMoviesList) {
-        moviesList = new ArrayList<Movie>();
-        moviesList.clear();
-        moviesList.addAll(mMoviesList);
-        notifyDataSetChanged();
-    }
-
-
     @NonNull
     @Override
     public View getView(int position, View convertView, @NonNull ViewGroup viewGroup) {
