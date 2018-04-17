@@ -81,62 +81,27 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mContentResolver = MainActivity.this.getContentResolver();
 
         if (savedInstanceState == null) {
-
-            getLoaderManager().initLoader(LOADER_ID, null, this);
-
-        }
-
-
-        if (savedInstanceState == null) {
-
             loadMovieData();
-
         }
     }
 
-
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-
-        super.onRestoreInstanceState(savedInstanceState);
-
-        ArrayList<Movie> items = savedInstanceState.getParcelableArrayList("myParceledList");
-
-        Log.v("items that returned", "items that returned" + items);
-
-        mIndex = savedInstanceState.getInt(INDEX);
-
-        mMovieAdapter = new MovieAdapter(context, 0);
-
-        if (items != null) {
-
-            mMovieAdapter.addAll(items);
-
-            Log.v("index from oncreate", "index from oncreate" + mIndex);
-
-            mGridView.setAdapter(mMovieAdapter);
-
-            mGridView.setSelection(mIndex);
-        } else {
-
-            loadMovieData();
-        }
-
-
-    }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-
         super.onSaveInstanceState(savedInstanceState);
+        int index = mGridView.getFirstVisiblePosition();
+        savedInstanceState.putParcelableArrayList("movie_list", mMovie);
+        savedInstanceState.putInt("pos", index);
+    }
 
-        Log.v("onsaveitems", "onsaveitems" + mMovie);
-
-        savedInstanceState.putParcelableArrayList("myParceledList", mMovie);
-
-        mIndex = mGridView.getFirstVisiblePosition();
-
-        savedInstanceState.putInt(INDEX, mIndex);
-
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mMovie = savedInstanceState.getParcelableArrayList("movie_list");
+        int index = savedInstanceState.getInt("pos");
+        MovieAdapter movieAdapter = new MovieAdapter(this, mMovie);
+        mGridView.setAdapter(movieAdapter);
+        mGridView.setSelection(index);
     }
 
 
@@ -155,6 +120,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         GridView gridview = findViewById(R.id.gridview);
         gridview.setAdapter(mMovieAdapter);
+
+        mMovie = movieData;
 
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v,

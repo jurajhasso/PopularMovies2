@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -61,7 +62,12 @@ public class DetailActivity extends Activity {
 
     private ListView mReviewListView;
     private ListView mVideoListView;
+    public ScrollView mScrollView;
     private TextView mErrorMessageDisplay;
+
+    public ArrayList<MovieReview> mReview;
+
+    public ArrayList<MovieVideo> mVideo;
 
     private ImageButton mButton;
     private ContentResolver mContentResolver;
@@ -94,12 +100,6 @@ public class DetailActivity extends Activity {
         final String movieOverview = intent.getStringExtra(EXTRA_MOVIE_OVERVIEW);
 
         final String fullPosterPath = BASE_IMAGE_URL + IMAGE_SIZE + posterPath;
-
-//        String movieReviewsUrl = MOVIE_BASE_URL + movieId + REVIEW_API_DELIMITER + API_KEY;
-//
-//        String movieVideosUrl = MOVIE_BASE_URL + movieId + VIDEO_API_DELIMITER + API_KEY;
-//
-//        Log.v(TAG, "URLs " + movieReviewsUrl + movieVideosUrl);
 
         mContentResolver = DetailActivity.this.getContentResolver();
 
@@ -157,10 +157,24 @@ public class DetailActivity extends Activity {
 
         movieOverView.setText(movieOverview);
 
-        new FetchReviewsTask().execute(movieIdString);
+        if (savedInstanceState == null) {
 
-        new FetchVideosTask().execute(movieIdString);
+            new FetchReviewsTask().execute(movieIdString);
 
+            new FetchVideosTask().execute(movieIdString);
+
+        }
+
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
     }
 
 
@@ -206,28 +220,13 @@ public class DetailActivity extends Activity {
 
                 MovieReviewAdapter mMovieReviewAdapter = new MovieReviewAdapter((Activity) context, reviewData);
 
+                mReview = reviewData;
+
                 mMovieReviewAdapter.addAll(reviewData);
 
                 ListView listView = findViewById(R.id.movie_review_list);
                 listView.setAdapter(mMovieReviewAdapter);
 
-
-//                mReviewListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//                    public void onItemClick(AdapterView<?> parent, View v,
-//                                            int position, long id) {
-//                        MovieReview data = reviewData.get(position);
-//
-//                        Integer movieId = data.getId();
-//                        String movieTitle = data.getTitle();
-//                        String movieReleaseDate = data.getRelease_date();
-//                        String moviePosterPath = data.getPoster_path();
-//                        Double movieVoteAverage = data.getVote_average();
-//                        String movieOverview = data.getOverview();
-//
-//                        startDetailActivity(position, movieId, movieTitle, movieReleaseDate, moviePosterPath, movieVoteAverage, movieOverview);
-//
-//                    }
-//                });
             } else {
                 showErrorMessage();
             }
@@ -283,6 +282,7 @@ public class DetailActivity extends Activity {
                 ListView listView = findViewById(R.id.movie_video_list);
                 listView.setAdapter(mMovieVideoAdapter);
 
+                mVideo = videoData;
 
                 mVideoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     public void onItemClick(AdapterView<?> parent, View v,
@@ -320,12 +320,5 @@ public class DetailActivity extends Activity {
         mReviewListView.setVisibility(View.INVISIBLE);
 
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
-    }
-
-
-
-    private void closeOnError () {
-        finish();
-        Toast.makeText(this, R.string.error_message, Toast.LENGTH_SHORT).show();
     }
 }
