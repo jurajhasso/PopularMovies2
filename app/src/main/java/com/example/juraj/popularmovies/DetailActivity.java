@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -71,6 +72,10 @@ public class DetailActivity extends Activity {
 
     private ImageButton mButton;
     private ContentResolver mContentResolver;
+
+    public Parcelable videoState;
+
+    public Parcelable reviewState;
 
     Context context = DetailActivity.this;
 
@@ -157,14 +162,27 @@ public class DetailActivity extends Activity {
 
         movieOverView.setText(movieOverview);
 
-        if (savedInstanceState == null) {
+        if (reviewState != null) {
+            mReviewListView.onRestoreInstanceState(reviewState);
+        } else {
 
             new FetchReviewsTask().execute(movieIdString);
-
-            new FetchVideosTask().execute(movieIdString);
-
         }
 
+        if (videoState != null) {
+            mVideoListView.onRestoreInstanceState(videoState);
+        } else {
+            new FetchVideosTask().execute(movieIdString);
+        }
+
+    }
+
+    @Override
+    public void onPause() {
+        Log.d(TAG, "saving listview state @ onPause");
+        reviewState = mReviewListView.onSaveInstanceState();
+        videoState = mVideoListView.onSaveInstanceState();
+        super.onPause();
     }
 
     @Override

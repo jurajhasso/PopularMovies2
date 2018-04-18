@@ -34,14 +34,6 @@ import static android.content.ContentValues.TAG;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<Movie>> {
 
-    private static final String GRID_VIEW_POSITION = "POSITION";
-
-    private static final String INDEX = "index";
-
-    private Parcelable mGridState = null;
-
-    private int mIndex;
-
     private static final int LOADER_ID = 1;
 
     private TextView mErrorMessageDisplay;
